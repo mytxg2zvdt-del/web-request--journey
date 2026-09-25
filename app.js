@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 const http = require("http");
 
 let data = [];
@@ -49,4 +50,51 @@ const server = http.createServer((req, res) => {
 
 server.listen(3000, () => {
     console.log("Server running on port 3000");
+=======
+const fs = require("fs");
+const EventEmitter = require("events");
+
+const emitter = new EventEmitter();
+
+let firstContent = "";
+let secondContent = "";
+
+fs.readFile("first.txt", "utf8", (err, data) => {
+    if (err) {
+        console.log(err);
+        return;
+    }
+
+    firstContent = data;
+
+    if (secondContent !== "") {
+        emitter.emit("filesReady");
+    }
+});
+
+fs.readFile("second.txt", "utf8", (err, data) => {
+    if (err) {
+        console.log(err);
+        return;
+    }
+
+    secondContent = data;
+
+    if (firstContent !== "") {
+        emitter.emit("filesReady");
+    }
+});
+
+emitter.on("filesReady", () => {
+    const combinedContent = firstContent + "\n" + secondContent;
+
+    fs.writeFile("combined.txt", combinedContent, (err) => {
+        if (err) {
+            console.log(err);
+            return;
+        }
+
+        console.log("Files combined successfully!");
+    });
+>>>>>>> 9f8a543e28a56fe36f1e9ce14d57e447c665e3d7
 });
