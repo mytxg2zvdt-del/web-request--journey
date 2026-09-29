@@ -1,100 +1,85 @@
-<<<<<<< HEAD
-const http = require("http");
-
-let data = [];
-
-const server = http.createServer((req, res) => {
-
-    // GET 1
-    if (req.method === "GET" && req.url === "/") {
-        res.end("Welcome to Home");
-        return;
-    }
-
-    // GET 2
-    if (req.method === "GET" && req.url === "/about") {
-        res.end("Welcome to About");
-        return;
-    }
-
-    // GET 3
-    if (req.method === "GET" && req.url === "/users") {
-        res.end("Users Page");
-        return;
-    }
-
-    // POST
-    if (req.method === "POST" && req.url === "/data") {
-
-        let body = "";
-
-        req.on("data", (chunk) => {
-            body += chunk;
-        });
-
-        req.on("end", () => {
-            const receivedData = JSON.parse(body);
-
-            data.push(receivedData);
-
-            res.end("Data received and stored successfully");
-        });
-
-        return;
-    }
-
-    // Route not found
-    res.statusCode = 404;
-    res.end("Not Found");
-});
-
-server.listen(3000, () => {
-    console.log("Server running on port 3000");
-=======
+ const express = require("express");
 const fs = require("fs");
-const EventEmitter = require("events");
 
-const emitter = new EventEmitter();
+const app = express();
+app.use(express.json());
 
-let firstContent = "";
-let secondContent = "";
+const filePath = "./notes.json";
 
-fs.readFile("first.txt", "utf8", (err, data) => {
-    if (err) {
-        console.log(err);
-        return;
-    }
+function readNotes() {
+  const data = fs.readFileSync(filePath, "utf8");
+  return JSON.parse(data || "[]");
+}
 
-    firstContent = data;
+function writeNotes(notes) {
+  fs.writeFileSync(filePath, JSON.stringify(notes, null, 2));
+}
 
-    if (secondContent !== "") {
-        emitter.emit("filesReady");
-    }
+app.get("/notes", (req, res) => {
+  const notes = readNotes();
+  res.json(notes);
 });
 
-fs.readFile("second.txt", "utf8", (err, data) => {
-    if (err) {
-        console.log(err);
-        return;
-    }
+app.get("/notes/:id", (req, res) => {
+  const notes = readNotes();
+  const note = notes.find((note) => note.id === Number(req.params.id));
 
-    secondContent = data;
+  if (!note) {
+    return res.status(404).json({ message: "Note not found" });
+  }
 
-    if (firstContent !== "") {
-        emitter.emit("filesReady");
-    }
+  res.json(note);
 });
 
-emitter.on("filesReady", () => {
-    const combinedContent = firstContent + "\n" + secondContent;
+app.post("/notes", (req, res) => {
+  const notes = readNotes();
 
-    fs.writeFile("combined.txt", combinedContent, (err) => {
-        if (err) {
-            console.log(err);
-            return;
-        }
+  const newNote = {
+    id: notes.length ? notes[notes.length - 1].id + 1 : 1,
+    title: req.body.title,
+    content: req.body.content
+  };
 
-        console.log("Files combined successfully!");
-    });
->>>>>>> 9f8a543e28a56fe36f1e9ce14d57e447c665e3d7
+  notes.push(newNote);
+  writeNotes(notes);
+
+  res.status(201).json(newNote);
+});
+
+app.put("/notes/:id", (req, res) => {
+  const notes = readNotes();
+  const index = notes.findIndex(
+    (note) => note.id === Number(req.params.id)
+  );
+
+  if (index === -1) {
+    return res.status(404).json({ message: "Note not found" });
+  }
+
+  notes[index].title = req.body.title;
+  notes[index].content = req.body.content;
+
+  writeNotes(notes);
+
+  res.json(notes[index]);
+});
+
+app.delete("/notes/:id", (req, res) => {
+  const notes = readNotes();
+  const index = notes.findIndex(
+    (note) => note.id === Number(req.params.id)
+  );
+
+  if (index === -1) {
+    return res.status(404).json({ message: "Note not found" });
+  }
+
+  const deletedNote = notes.splice(index, 1)[0];
+  writeNotes(notes);
+
+  res.json(deletedNote);
+});
+
+app.listen(3000, () => {
+  console.log("Server running on port 3000");
 });
